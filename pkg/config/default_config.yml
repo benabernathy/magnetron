@@ -1,0 +1,13 @@
+ClientHost: "localhost:5498"
+ServerHost: "localhost:5499"
+ServerExpiration: 10m
+StaticEntries:
+  - Name: -----========================-----
+    Description:
+    Address: 127.0.0.1:0001
+  - Name: "           Magnetron Static Servers"
+    Description:
+    Address: 127.0.0.1:0001
+  - Name: -----========================-----
+    Description:
+    Address: 127.0.0.1:0001

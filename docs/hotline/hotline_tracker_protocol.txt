@@ -1,0 +1,55 @@
+Tracker Protocol
+ v1.2.0
+ by Virtual1
+ virtualftp.neotek.net
+ 02/25/99
+
+
+ナClient opens a connection to the tracker on port 5498
+ナConnection is established
+ナClient sends 48 54 52 4B  string (Hotline Tracker ID - always "HTRK")
+ナClient sends short (tracker compatible version - example is 1)
+ナTracker sends data
+
+The tracker sends three kinds of information.  First, it sends a Header.  It only sends it once.  Next, it sends an Update, and then starts sending Server Records.  It can send another Update at any time while sending Server Records, so you have to test for them all the while you're reading in Server Records.  I think the Tracker is sending records in bursts of 50 or so, and will put a new Update at the start of each burst, but hey, who knows?  They can be ignored I think.  Two or more updates can be sent back-to-back also.  I just look at the first byte when reading servers, and if it's a zero, I just eat that and the next seven bytes and try again.
+
+
+Header:
+ナ48 54 52 4B 00 01 (same as what the client sends)
+
+Update:
+ナ00 01  short (tracker version - example is 1)
+ナ1F EC  short (total users online at all servers - example is 8,172)
+ナ01 4D  short (number of servers to follow in listing - example is 333)
+ナ00 51  short (unknown!  example is 81 - you tell me!)
+
+Server Record:
+ナ8E 67 24 D9  IP address - example is 142.103.36.217
+ナ15 7C  short (port number - example is 5500)
+ナ00 09  short (number of users online at this server - example is 9)
+ナ00 00  short (reserved?  always zero)
+ナ0E  byte (length of server's name - example is 14)
+ナ4A 65 6E 6E 79 27 73 20 53 65 72 76 65 72  string (server name)
+ナ7B  byte (length of server's desscription - example is 123)
+ナ47 55 45 53 54 20 4F 46 46 20 2D 2D 20 46 61 73  string (description)
+  74 20 28 74 33 29 20 68 69 67 68 20 71 75 61 6C
+  69 74 79 20 58 58 58 20 70 69 63 73 2C 20 74 68
+  65 20 62 65 73 74 20 6D 6F 76 69 65 73 2C 20 61
+  6E 64 20 6E 6F 77 20 6F 76 65 72 20 33 35 30 30
+  20 73 74 6F 72 69 65 73 21 20 28 4E 4F 54 48 49
+  4E 47 20 49 4C 4C 45 47 41 4C 20 54 4F 4C 45 52
+  41 54 45 44 20 48 45 52 45 21 29
+
+You can tell an Update from a Server Record by looking at the first byte.  No IP can start with zero, so anything that does is an update.  Keep reading until you have read as many Server Records as the Header indicated there should be, then just close the connection. (the tracker will not close automatically on its end)  Trackers SHOULD respond to the client within 20 seconds.  Large trackers can have upwards of 800 Server Records in them, so be sure your application is prepared to handle that volume of data.
+
+
+That "unknown" entry in the update - a very curious thing indeed...  it's usually in the 70's, and tends to change between each update you receive while reading popular Trackers.  It does not represent the number of Server Records that follow, and I can't see anything else obvious that it represents.  If anyone figures out its function, please let me know.
+
+--  the end --
+
+
+Tracker Protocol
+ v1.1.0
+ by Virtual1
+ virtualftp.neotek.net
+ 12-07-98

@@ -1,0 +1,113 @@
+Compiled by Virtual1, from multiple sources
+
+
+Privs are stored in the "UserData" file located in the users folder.
+All the priv data is stored in binary 1's & 0's taking up 8 bytes (4th byte thru 11th).
+The bytes are the 4th thru 7th Bytes in the Userdata file, space for up to 64 privs.  Only the first four bytes are currently used.
+
+In the following description 1 denotes the highest bit (leftmost) in a byte.
+If priv #1 is the only one enabled, then the byte is chr(128).
+
+All privs on looks like this.
+In Hex 'FF E3 CF FF'
+11111111-11100011-11001111-11111111
+¥ denotes the default values for a NewUser.
+
+7  Can Delete Files          
+6  Can Upload Files		¥
+5  Can Download Files	¥
+4  Can Rename Files
+3  Can Move Files
+2  Can Create Folders
+1  Can Delete Folders
+0  Can Rename Folders
+
+15 Can Move Folders
+14 Can Read Chat			¥
+13 Can Send Chat			¥
+12 Reserved (not used)
+11 Reserved (not used)
+10 Reserved (not used)
+ 9 Can Create Users
+ 8 Can Delete Users
+
+23 Can Read Users
+22 Can Modify Users
+21 Reserved (not used)
+20 Reserved (not used)
+19 Can read news			¥
+18 Can Post News			¥
+17 Can Disconnect Users
+16 Cannot be Disconnected
+
+31 Can Get User Info
+30 Can Upload Anywhere
+29 Can Use Any Name		¥
+28 Don't Show Agreement
+27 Can Comment Files
+26 Can Comment Folders
+25 Can View DropBoxes
+24 Can Make Aliases
+
+
+As it appears in the Hotline Client's window:
+
+
+File System Maintenance
+[Ã] Can Download Files
+[Ã] Can Upload Files
+[Ã] Can Upload Anywhere
+[Ã] Can Delete Files
+[Ã] Can Rename Files
+[Ã] Can Move Files
+[Ã] Can Comment Files
+[Ã] Can Create Folders
+[Ã] Can Delete Folders
+[Ã] Can Rename Folders
+[Ã] Can Move Folders
+[Ã] Can Comment Folders
+[Ã] Can View Drop Boxes
+[Ã] Can Make Aliases
+
+User Maintenance
+[Ã] Can Create Users
+[Ã] Can Delete Users
+[Ã] Can Read Users
+[Ã] Can Modify Users
+[Ã] Can Get User Info
+[Ã] Can Disconnect Users
+[Ã] Cannot be Disconnected
+
+News
+[Ã] Can Read News
+[Ã] Can Post News
+
+Chat
+[Ã] Can Read Chat
+[Ã] Can Send Chat
+
+Miscellaneous
+[Ã] Can Use Any Name
+[Ã] Don't Show Agreement
+
+
+
+
+UserData file:
+
+position  default       what
+1-2       0001          short(PrefsVersion)
+3-4       0000          short(minimum server version that can access correctly
+5-12      60600C2C0000  priv bits (above)
+13-526    (zeros)       reserved for future expansion
+527-530   00000005      long(nickname length)
+531-562   GUEST         string(nickname)
+563-662   (zeros)       reserved for future expansion
+663-666   00000005      long(account name length)
+667-698   GUEST         string(account name)
+699-702   00000000      long(password length)
+703-734   (blank)       string(password)
+
+734 bytes total
+
+
