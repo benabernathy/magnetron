@@ -8,8 +8,8 @@ release: $(PLATFORMS)
 
 $(PLATFORMS):
 	mkdir -p bin/$(os)-$(arch)
-	GOOS=$(os) GOARCH=$(arch) go build -o 'bin/$(os)-$(arch)/magnetron' cmd/magnetron/main.go
 	mkdir -p bin/dist
+	cd cmd/magnetron && GOOS=$(os) GOARCH=$(arch) go build -o '../../bin/$(os)-$(arch)/magnetron' .
 	tar -zcvf 'bin/dist/magnetron-$(os)-$(arch).tar.gz' 'bin/$(os)-$(arch)'
 
 clean:

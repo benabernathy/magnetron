@@ -138,7 +138,7 @@ func serve(cCtx *cli.Context) error {
 
 	fmt.Println(banner)
 
-	log.Printf("Magnetron Hotline Tracker Version: %s", magnetronVersion)
+	log.Printf("Magnetron Hotline Tracker %s, %s", magnetronVersion, Commit)
 
 	if cCtx.Args().Len() != 1 {
 		log.Printf("Args: %s", cCtx.Args())
