@@ -15,6 +15,14 @@ $(PLATFORMS):
 clean:
 	rm -rf bin
 
+docker-build:
+	docker build -t magnetron:0.1.0 .
+
+docker-run: docker-build
+	docker run --rm --name magnetron magnetron:0.1.0
+
 all: clean release $(PLATFORMS)
+
+
 
 .PHONY: all

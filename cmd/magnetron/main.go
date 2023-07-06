@@ -141,7 +141,8 @@ func serve(cCtx *cli.Context) error {
 	log.Printf("Magnetron Hotline Tracker Version: %s", magnetronVersion)
 
 	if cCtx.Args().Len() != 1 {
-		log.Fatal("Expected config file path. e.g. ~/config.yaml")
+		log.Printf("Args: %s", cCtx.Args())
+		log.Fatalf("Expected config file path. e.g. ~/config.yaml, %s", cCtx.Args().First())
 	}
 
 	configPath := cCtx.Args().First()
