@@ -24,9 +24,9 @@ type Config struct {
 }
 
 type StaticEntry struct {
-	Name        string `yaml:"Name"`
-	Description string `yaml:"Description"`
-	Address     string `yaml:"Address"`
+	Name        string `yaml:"Name"`        // Name of the server
+	Description string `yaml:"Description"` // Description of the server
+	Address     string `yaml:"Address"`     // Host and port of the server in the form "ip:port"
 }
 
 func LoadConfig(configPath string) (*Config, error) {
