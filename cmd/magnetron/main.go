@@ -27,6 +27,8 @@ var Commit = func() string {
 				return setting.Value
 			}
 		}
+	} else {
+		fmt.Println("oops")
 	}
 
 	return ""

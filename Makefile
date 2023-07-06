@@ -1,19 +1,20 @@
-PHONY: all
+PLATFORMS := linux/amd64 linux/arm64 windows/amd64 darwin/arm64 darwin/amd64
 
-all: clean build
+temp = $(subst /, ,$@)
+os = $(word 1, $(temp))
+arch = $(word 2, $(temp))
+
+release: $(PLATFORMS)
+
+$(PLATFORMS):
+	mkdir -p bin/$(os)-$(arch)
+	GOOS=$(os) GOARCH=$(arch) go build -o 'bin/$(os)-$(arch)/magnetron' cmd/magnetron/main.go
+	mkdir -p bin/dist
+	tar -zcvf 'bin/dist/magnetron-$(os)-$(arch).tar.gz' 'bin/$(os)-$(arch)'
 
 clean:
 	rm -rf bin
 
-dist: build
-	mkdir -p dist
-	tar -zcvf dist/magnetron_macos_arm64.tar.gz bin
+all: clean release $(PLATFORMS)
 
-build:
-	go build -o bin/magnetron cmd/magnetron/main.go
-
-run:
-	go run cmd/magnetron/main.go
-
-docker:
-	docker build -t magnetron:latest .
+.PHONY: all
