@@ -58,5 +58,13 @@ file. For example, you can use the following command to run the server.
 magnetron serve config.yml
 ```
 
-Magnetron will then start up and listen for server and client connections.
+Magnetron will then start up and listen for server and client connections. 
 
+### Docker
+___
+Docker is not official supported yet, but a basic Dockerfile can be found in this directory. It can also be built
+using the makefile command: 
+
+```shell
+make docker-build
+```
