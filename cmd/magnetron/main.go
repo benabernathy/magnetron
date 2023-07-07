@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"log"
-	"magnetron/pkg/config"
-	"magnetron/pkg/registry"
+	"magnetron/internal/config"
+	"magnetron/internal/registry"
 	"os"
 	"runtime/debug"
 

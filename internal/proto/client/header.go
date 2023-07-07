@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/binary"
-	"magnetron/pkg/proto"
+	"magnetron/internal/proto"
 	"net"
 )
 

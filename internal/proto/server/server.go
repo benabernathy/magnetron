@@ -2,7 +2,7 @@ package server
 
 import (
 	"errors"
-	"magnetron/pkg/proto"
+	"magnetron/internal/proto"
 )
 
 type ServerRegistration struct {

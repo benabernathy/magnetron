@@ -3,8 +3,8 @@ package client
 import (
 	"encoding/binary"
 	"fmt"
-	"magnetron/pkg/db"
-	"magnetron/pkg/proto"
+	"magnetron/internal/db"
+	"magnetron/internal/proto"
 	"net"
 	"strconv"
 	"strings"

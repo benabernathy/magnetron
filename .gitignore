@@ -4,3 +4,10 @@ dist
 
 docs/hotline/~$*.doc
 test-config.yml
+.DS_Store
+*.iml
+*.ipr
+*.iws
+*.bak
+*.swp
+*.swo
