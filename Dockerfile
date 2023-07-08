@@ -3,14 +3,14 @@ FROM golang:1.20 AS builder
 WORKDIR /app
 COPY . .
 
-RUN cd cmd/magnetron && go build -o /app/magnetron . && chmod a+x /app/magnetron
+RUN cd cmd/magnetron && CGO_ENABLED=1 go build -ldflags="-w -s" -o /app/magnetron . && chmod a+x /app/magnetron
 RUN /app/magnetron c init /app/config.yml
 
-FROM scratch
+FROM bitnami/minideb:latest
 
 COPY --from=builder /app/magnetron /app/magnetron
 COPY --from=builder /app/config.yml /usr/local/var/magnetron/config.yml
 
 EXPOSE 5499 5498
-
-CMD ["/app/magnetron", "serve", "/usr/local/var/magnetron/config.yml"]
+ENTRYPOINT ["/app/magnetron"]
+CMD ["serve", "/usr/local/var/magnetron/config.yml"]
