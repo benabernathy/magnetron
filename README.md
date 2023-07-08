@@ -68,3 +68,5 @@ using the makefile command:
 ```shell
 make docker-build
 ```
+
+Prebuilt Docker images will be available shortly.
