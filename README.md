@@ -60,7 +60,7 @@ magnetron serve config.yml
 
 Magnetron will then start up and listen for server and client connections. 
 
-### Docker
+### Building Docker Images
 ___
 Docker is not official supported yet, but a basic Dockerfile can be found in this directory. It can also be built
 using the makefile command: 
@@ -69,4 +69,14 @@ using the makefile command:
 make docker-build
 ```
 
-Prebuilt Docker images will be available shortly.
+### Prebuilt Docker Images
+Prebuilt Docker images are available for linux (amd64 and arm64). They can be pulled by running the following command
+
+```shell
+docker pull benabernathy/magnetron:latest
+```
+
+The docker images can be run using:
+```shell
+docker run --name magnetron --rm benabernathy/magnetron:latest
+```
