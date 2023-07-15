@@ -1,4 +1,4 @@
-# Magnetron
+11# Magnetron
 _____
 Magnetron is a modern, cross-platform implementation of the Hotline tracker
 protocol. It is written in Golang.
@@ -76,7 +76,16 @@ Prebuilt Docker images are available for linux (amd64 and arm64). They can be pu
 docker pull benabernathy/magnetron:latest
 ```
 
-The docker images can be run using:
+You can externalize Magnetron's configuration by mounting your host filesystem via a volume to the Docker container. To generate a default configuration, use the following command (assuming your desired host file system path is `conf`):
+
 ```shell
-docker run --name magnetron --rm benabernathy/magnetron:latest
+docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:latest "config" "init" "/usr/local/var/magnetron/config.yml"
 ```
+
+After you have run this command, the config file will now be in your `conf` directory. After making changes, you can re-run Magnetron with your new configuration:
+
+```shell
+docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:latest
+```
+
+Note: If you are using Docker Desktop (e.g. on Windows), you'll need to replace `$(pwd)` with the fully qualified configuration directory path.
