@@ -1,4 +1,4 @@
-11# Magnetron
+# Magnetron
 _____
 Magnetron is a modern, cross-platform implementation of the Hotline tracker
 protocol. It is written in Golang.
@@ -48,6 +48,80 @@ The previous command will tell Magnetron to write out the default configuration 
 file named `config.yml` in your current directory. As expected, providing a different
 file name or path will cause the file to be written with the specified name or location.
 
+#### Password Configuration
+If you wish to require servers to use a password to register with your tracker, you'll 
+then need to perform the following steps. Magnetron stores hashes of passwords so the 
+plain text password is never stored locally. When the server connects and provides its 
+password, Magnetron will hash the server-supplied password and check it against the
+stored hash. If they match, then the server is registered. Otherwise, the server's 
+information will not be registered with the tracker.
+
+Like the configuration, Magnetron provides the ability to generate a default password
+configuration for you to start with. This is done by running the following command.
+
+```shell
+magnetron password init passwords.yml
+```
+
+The previous command will tell Magnetron to write out the default password configuration to a
+file named `passwords.yml` in your current directory. As expected, providing a different
+file name or path will cause the file to be written with the specified name or location.
+
+Then you'll need to update your Magnetron configuration file and make sure the following
+fields are correct:
+
+```yaml
+EnablePasswords: true
+PasswordFile: "./passwords.yml"
+```
+Next you'll need to open the `passwords.yml` file and set entries:
+
+```yaml
+PasswordEntries:
+  - Name: "default1"
+    Description: "default1's password is password"
+    Password: "$2a$10$UiFV2qCHvXWeYbhk2LlqueKvQwPqJWTxuJAqUhuCLdz2F9fJr8dNG"
+```
+
+The `Name` and `Description` fields can be any value you want. They are there to help you
+remember/selectively revoke passwords. The `Password` field is the string value of the 
+hashed password. More details on how to generate this are provided later.
+
+You may add as many entries as you like, for example:
+
+```yaml
+PasswordEntries:
+  - Name: "default1"
+    Description: "default1's password is password"
+    Password: "$2a$10$UiFV2qCHvXWeYbhk2LlqueKvQwPqJWTxuJAqUhuCLdz2F9fJr8dNG"
+  - Name: "default2"
+    Description: "default1's password is password"
+    Password: "$2a$10$UiFV2qCHvXWeYbhk2LlqueKvQwPqJWTxuJAqUhuCLdz2F9fJr8dNG"
+```
+
+The `Name` fields do not have to be unique, although their utility is questionable if there are duplicates...
+
+Magnetron provides a convenience function for encrypting passwords. You can encrypt a password by running:
+
+```shell
+magnetron password encrypt
+```
+
+Following the on-screen prompts will result in a hashed password. Magnetron can also check a provided
+password against the password configuration file. You can do this by running the following command:
+
+```shell
+magnetron password check passwords.yml
+```
+
+After you follow the on-screen prompts, magentron will check the supplied password against the password
+list and tell you if it is valid or not. This can be a handy debug tool. Magnetron can also perform a 
+limited password configuration validation against a supplied password configuration file:
+
+```shell
+magnetron validate passwords.yml
+```
+
 ### Running Magnetron
 ___
 
@@ -76,16 +150,32 @@ Prebuilt Docker images are available for linux (amd64 and arm64). They can be pu
 docker pull benabernathy/magnetron:latest
 ```
 
+Note: If you are using Docker Desktop (e.g. on Windows), you'll need to replace `$(pwd)` with the fully qualified configuration directory path.
+
 You can externalize Magnetron's configuration by mounting your host filesystem via a volume to the Docker container. To generate a default configuration, use the following command (assuming your desired host file system path is `conf`):
 
 ```shell
 docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:latest "config" "init" "/usr/local/var/magnetron/config.yml"
 ```
 
-After you have run this command, the config file will now be in your `conf` directory. After making changes, you can re-run Magnetron with your new configuration:
+After you have run this command, the config file will now be in your `conf` directory. You'll most likely need to change the `ClientHost` and `ServerHost` values to:
 
-```shell
-docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:latest
+```yaml
+ClientHost: 0.0.0.0:5498
+ServerHost: 0.0.0.0:5498
 ```
 
-Note: If you are using Docker Desktop (e.g. on Windows), you'll need to replace `$(pwd)` with the fully qualified configuration directory path.
+After making changes, you can re-run Magnetron with your new configuration, publishing the ports to your host:
+
+```shell
+docker run --name magnetron --rm -v $(PWD)/conf:/usr/local/var/magnetron -p 5499:5499 -p 5498:5498 benabernathy/magnetron:latest
+```
+
+If you want to initialize the password configuration, you can run the follwoing command:
+
+```shell
+docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:latest "password" "init" "/usr/local/var/magnetron/passwords.yml"
+```
+
+Note: The path to the passwords.yml file specified in the field `PasswordFile` in this case would be: `/usr/local/var/magnetron/passwords.yml`
+
