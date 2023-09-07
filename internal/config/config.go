@@ -21,6 +21,8 @@ type Config struct {
 	ServerHost       string        `yaml:"ServerHost" validate:"required"`       // Interface/host and port the servers will connect to the tracker on
 	ServerExpiration time.Duration `yaml:"ServerExpiration" validate:"required"` // How long a server can be inactive before it is removed from the list
 	StaticEntries    []StaticEntry `yaml:"StaticEntries"`                        // Static entries are placed in order at the top of the server list
+	EnablePasswords  bool          `yaml:"EnablePasswords"`                      // Enable password authentication
+	PasswordFile     string        `yaml:"PasswordFile"`                         // Path to the password file
 }
 
 type StaticEntry struct {

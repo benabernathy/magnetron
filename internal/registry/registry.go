@@ -14,15 +14,16 @@ import (
 )
 
 type Registry struct {
-	db  *gorm.DB
-	cfg *config.Config
+	db             *gorm.DB
+	cfg            *config.Config
+	passwordConfig *config.PasswordConfig
 }
 
 var (
 	RegistryInstance *Registry
 )
 
-func NewRegistry(cfg *config.Config) error {
+func NewRegistry(cfg *config.Config, passwordConfig *config.PasswordConfig) error {
 	var database *gorm.DB
 	var err error
 
@@ -34,8 +35,9 @@ func NewRegistry(cfg *config.Config) error {
 	}
 
 	newReg := &Registry{
-		db:  database,
-		cfg: cfg,
+		db:             database,
+		cfg:            cfg,
+		passwordConfig: passwordConfig,
 	}
 
 	for _, entry := range cfg.StaticEntries {
@@ -299,9 +301,23 @@ func (r *Registry) serveServers() {
 			userCountArray[1] = serverReg.NumberOfUsers[1]
 			userCount := binary.BigEndian.Uint16(userCountArray)
 
-			err := r.RegisterNewServer(passID, host, port, serverName, description, userCount)
-			if err != nil {
-				log.Println(err)
+			var validServer = true
+			if r.cfg.EnablePasswords == true {
+
+				passwdString := string(serverReg.Password)
+
+				if !CheckPassword(passwdString, *r.passwordConfig) {
+					log.Printf("Rejected server %s / %s because of invalid password", serverName, addr.IP.String())
+					validServer = false
+				}
+
+			}
+
+			if validServer {
+				err := r.RegisterNewServer(passID, host, port, serverName, description, userCount)
+				if err != nil {
+					log.Println(err)
+				}
 			}
 
 			//log.Printf("Registered server %s / %s", serverName, addr.IP.String())
