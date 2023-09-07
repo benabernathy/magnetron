@@ -11,3 +11,5 @@ StaticEntries:
   - Name: -----========================-----
     Description:
     Address: 127.0.0.1:0001
+EnablePasswords: false
+PasswordFile: "./passwords.yml"

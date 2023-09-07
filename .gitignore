@@ -4,6 +4,7 @@ dist
 
 docs/hotline/~$*.doc
 test-config.yml
+test-passwords.yml
 .DS_Store
 *.iml
 *.ipr
