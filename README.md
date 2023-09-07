@@ -168,7 +168,7 @@ ServerHost: 0.0.0.0:5498
 After making changes, you can re-run Magnetron with your new configuration, publishing the ports to your host:
 
 ```shell
-docker run --name magnetron --rm -v $(PWD)/conf:/usr/local/var/magnetron -p 5499:5499 -p 5498:5498 benabernathy/magnetron:latest
+docker run --name magnetron --rm -v $(PWD)/conf:/usr/local/var/magnetron -p 5499:5499/udp -p 5498:5498 benabernathy/magnetron:latest
 ```
 
 If you want to initialize the password configuration, you can run the follwoing command:
