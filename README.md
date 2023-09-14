@@ -19,8 +19,8 @@ and perhaps even grow the community.
 ## Getting Started
 ____
 
-Magnetron is currently in alpha release and as such, we do not provide prebuilt binaries. Magnetron
-will provide prebuilt binaries and Docker images once it has reached the beta stage.
+Magnetron provides prebuilt binaries and Docker images. YOu can find more information about how
+to use the Docker images later on in the readme. 
 
 ### Building
 A Makefile is provided for your convenience, although Make is not required.
@@ -35,7 +35,7 @@ go build cmd/magnetron/main.go -o magnetron
 ```
 
 ### Configuration
-In order to run, Magnetron requires a configuration. The default configuration
+In order to run, Magnetron requires a configuration file. The default configuration
 provided by the application should be considered the minimal set of configuration
 required to serve as a tracker. To generate a configuration file with default values,
 run the following command.
@@ -57,7 +57,7 @@ stored hash. If they match, then the server is registered. Otherwise, the server
 information will not be registered with the tracker.
 
 Like the configuration, Magnetron provides the ability to generate a default password
-configuration for you to start with. This is done by running the following command.
+configuration file for you to start with. This is done by running the following command.
 
 ```shell
 magnetron password init passwords.yml
@@ -95,7 +95,7 @@ PasswordEntries:
     Description: "default1's password is password"
     Password: "$2a$10$UiFV2qCHvXWeYbhk2LlqueKvQwPqJWTxuJAqUhuCLdz2F9fJr8dNG"
   - Name: "default2"
-    Description: "default1's password is password"
+    Description: "default2's password is password"
     Password: "$2a$10$UiFV2qCHvXWeYbhk2LlqueKvQwPqJWTxuJAqUhuCLdz2F9fJr8dNG"
 ```
 
@@ -114,7 +114,7 @@ password against the password configuration file. You can do this by running the
 magnetron password check passwords.yml
 ```
 
-After you follow the on-screen prompts, magentron will check the supplied password against the password
+After you follow the on-screen prompts, Magentron will check the supplied password against the password
 list and tell you if it is valid or not. This can be a handy debug tool. Magnetron can also perform a 
 limited password configuration validation against a supplied password configuration file:
 
@@ -125,19 +125,18 @@ magnetron validate passwords.yml
 ### Running Magnetron
 ___
 
-Magnetron can be run by telling it to run the server and use a specified configuration
-file. For example, you can use the following command to run the server.
+Magnetron can be run by telling it to run the tracker and use a specified configuration
+file. For example, you can use the following command to run the tracker.
 
 ```shell
 magnetron serve config.yml
 ```
 
-Magnetron will then start up and listen for server and client connections. 
+Magnetron will then start up and listen for hotline server and client connections. 
 
 ### Building Docker Images
 ___
-Docker is not official supported yet, but a basic Dockerfile can be found in this directory. It can also be built
-using the makefile command: 
+A basic Dockerfile can be found in this directory. It can also be built using the make command: 
 
 ```shell
 make docker-build
