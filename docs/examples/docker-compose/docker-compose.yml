@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  magnetron:
+    restart: always
+    image: benabernathy/magnetron:latest
+    pull_policy: always
+    ports:
+      - 5499:5499/udp
+      - 5498:5498/tcp
+    volumes:
+      - /volume1/docker/magnetron/conf:/usr/local/var/magnetron:ro
