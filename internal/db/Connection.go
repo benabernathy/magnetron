@@ -23,6 +23,10 @@ func InitDB(db *gorm.DB) error {
 		return err
 	}
 
+	if err := db.AutoMigrate(&FederatedServer{}); err != nil {
+		return err
+	}
+
 	return nil
 
 }

@@ -13,7 +13,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
-var magnetronVersion = "0.2.0"
+var magnetronVersion = "0.3.0"
 
 var (
 	//go:embed banner.txt
