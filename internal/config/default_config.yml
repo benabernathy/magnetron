@@ -5,7 +5,7 @@ StaticEntries:
   - Name: -----========================-----
     Description:
     Address: 127.0.0.1:0001
-  - Name: "           Magnetron Static Servers"
+  - Name: "Magnetron Static Servers"
     Description:
     Address: 127.0.0.1:0001
   - Name: -----========================-----
@@ -13,3 +13,10 @@ StaticEntries:
     Address: 127.0.0.1:0001
 EnablePasswords: false
 PasswordFile: "./passwords.yml"
+TrackerFederation:
+  Enabled: false
+  PollFrequency: 5m
+  Header: "--=Federated Servers=--"
+  Trackers:
+    - Address: "localhost:5498"
+      Name: "Sample loop back"

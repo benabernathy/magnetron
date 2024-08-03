@@ -50,3 +50,17 @@ func SendUpdateMessage(msg UpdateMessage, conn net.Conn) *proto.ProtoError {
 		return nil
 	}
 }
+
+func ReceiveUpdateMessage(conn net.Conn) (*UpdateMessage, *proto.ProtoError) {
+	var msg = UpdateMessage{}
+	if err := binary.Read(conn, binary.BigEndian, &msg); err != nil {
+		result := proto.ProtoError{
+			Error:        err,
+			ErrorMessage: "Error while attempting to receive update message from client)",
+			Expected:     msg,
+		}
+		return nil, &result
+	} else {
+		return &msg, nil
+	}
+}

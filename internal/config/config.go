@@ -17,18 +17,31 @@ var (
 )
 
 type Config struct {
-	ClientHost       string        `yaml:"ClientHost" validate:"required"`       // Interface/host and port the clients will connect to the tracker on
-	ServerHost       string        `yaml:"ServerHost" validate:"required"`       // Interface/host and port the servers will connect to the tracker on
-	ServerExpiration time.Duration `yaml:"ServerExpiration" validate:"required"` // How long a server can be inactive before it is removed from the list
-	StaticEntries    []StaticEntry `yaml:"StaticEntries"`                        // Static entries are placed in order at the top of the server list
-	EnablePasswords  bool          `yaml:"EnablePasswords"`                      // Enable password authentication
-	PasswordFile     string        `yaml:"PasswordFile"`                         // Path to the password file
+	ClientHost        string                  `yaml:"ClientHost" validate:"required"`       // Interface/host and port the clients will connect to the tracker on
+	ServerHost        string                  `yaml:"ServerHost" validate:"required"`       // Interface/host and port the servers will connect to the tracker on
+	ServerExpiration  time.Duration           `yaml:"ServerExpiration" validate:"required"` // How long a server can be inactive before it is removed from the list
+	StaticEntries     []StaticEntry           `yaml:"StaticEntries"`                        // Static entries are placed in order at the top of the server list
+	EnablePasswords   bool                    `yaml:"EnablePasswords"`                      // Enable password authentication
+	PasswordFile      string                  `yaml:"PasswordFile"`                         // Path to the password file
+	TrackerFederation TrackerFederationConfig `yaml:"TrackerFederation"`                    // Tracker federation configuration
 }
 
 type StaticEntry struct {
 	Name        string `yaml:"Name"`        // Name of the server
 	Description string `yaml:"Description"` // Description of the server
 	Address     string `yaml:"Address"`     // Host and port of the server in the form "ip:port"
+}
+
+type TrackerFederationConfig struct {
+	Enabled        bool           `yaml:"Enabled"`
+	PollFrequency  time.Duration  `yaml:"PollFrequency"`
+	Header         string         `yaml:"Header"`
+	TrackerEntries []TrackerEntry `yaml:"Trackers"`
+}
+
+type TrackerEntry struct {
+	Address string `yaml:"Address"`
+	Name    string `yaml:"Name"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {

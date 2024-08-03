@@ -170,6 +170,23 @@ func (r *Registry) getAllRegisteredServers() ([]client.ServerMessage, error) {
 	return serverMessages, nil
 }
 
+func (r *Registry) getAllFederatedServers() ([]client.ServerMessage, error) {
+	var federatedServers []db.FederatedServer
+	r.db.Find(&federatedServers)
+
+	serverMessages := make([]client.ServerMessage, 0)
+
+	for _, server := range federatedServers {
+		if serverMessage, err := client.BuildFederatedServerMessage(server); err != nil {
+			return nil, err
+		} else {
+			serverMessages = append(serverMessages, *serverMessage)
+		}
+	}
+
+	return serverMessages, nil
+}
+
 func removeExpiredServers(r *Registry) {
 
 	var registeredServers []db.RegisteredServer
@@ -183,6 +200,27 @@ func removeExpiredServers(r *Registry) {
 			log.Printf("Removed expired server %s", server.Name)
 		}
 	}
+}
+
+func (r *Registry) registerFederatedServer(host string, port uint16, name string, description string, userCount uint16, trackerAddress string) error {
+
+	fedServer := db.FederatedServer{
+		Host:        host,
+		Port:        port,
+		Name:        name,
+		Description: description,
+		UserCount:   userCount,
+		LastSeen:    time.Now(),
+		FirstSeen:   time.Now(),
+	}
+
+	fedServer.ID = fedServer.GenerateId(trackerAddress, host, port)
+
+	if createError := r.db.Save(&fedServer).Error; createError != nil {
+		return fmt.Errorf("could not register federated server because of an internal error: %s", createError)
+	}
+
+	return nil
 }
 
 func (r *Registry) serveClients() {
@@ -229,10 +267,31 @@ func (r *Registry) serveClients() {
 					log.Println(err)
 				}
 
+				var federatedServerMessages []client.ServerMessage
+
+				if federatedServerMessages, err = r.getAllFederatedServers(); err != nil {
+					log.Println(err)
+				}
+
 				var serverMessages []client.ServerMessage
+
+				fedServerHeaderName := []byte(r.cfg.TrackerFederation.Header)
+
+				federatedServerHeader := client.ServerMessage{
+					IPAddr:          [4]byte{0, 0, 0, 0},
+					Port:            [2]byte{0, 0},
+					NumUsers:        [2]byte{0, 0},
+					Unused:          [2]byte{0, 0},
+					NameSize:        byte(len(fedServerHeaderName)),
+					Name:            fedServerHeaderName,
+					DescriptionSize: 0,
+					Description:     nil,
+				}
 
 				serverMessages = append(serverMessages, staticServerMessages...)
 				serverMessages = append(serverMessages, registeredServerMessages...)
+				serverMessages = append(serverMessages, federatedServerHeader)
+				serverMessages = append(serverMessages, federatedServerMessages...)
 
 				update := client.BuildUpdateMessage(serverMessages)
 
@@ -240,14 +299,8 @@ func (r *Registry) serveClients() {
 					log.Println(msgError)
 				}
 
-				for _, staticServerMsg := range staticServerMessages {
+				for _, staticServerMsg := range serverMessages {
 					if msgError := client.SendServerRegistry(staticServerMsg, conn); msgError != nil {
-						log.Println(msgError)
-					}
-				}
-
-				for _, registeredServerMsg := range registeredServerMessages {
-					if msgError := client.SendServerRegistry(registeredServerMsg, conn); msgError != nil {
 						log.Println(msgError)
 					}
 				}
@@ -326,7 +379,92 @@ func (r *Registry) serveServers() {
 	}
 }
 
+func (r *Registry) handleFederatedTrackers() {
+
+	if r.cfg.TrackerFederation.Enabled {
+
+		r.pollFederatedTrackers()
+
+		ticker := time.NewTicker(r.cfg.TrackerFederation.PollFrequency)
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					r.pollFederatedTrackers()
+				}
+			}
+		}()
+	}
+
+}
+
+func (r *Registry) pollFederatedTrackers() {
+	for _, tracker := range r.cfg.TrackerFederation.TrackerEntries {
+		go r.pollFederatedTracker(tracker.Address)
+	}
+}
+
+func (r *Registry) pollFederatedTracker(trackerAddress string) {
+	conn, err := net.Dial("tcp", trackerAddress)
+
+	defer func(conn net.Conn) {
+		if conn != nil {
+			err := conn.Close()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+	}(conn)
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	if msgError := client.SendTrackerHeaderMsg(client.BuildHeaderMessage(), conn); msgError != nil {
+		log.Println(msgError)
+		return
+	}
+
+	if _, errorMsg := client.ReceiveTrackerHeaderMsg(conn); errorMsg != nil {
+		log.Println(errorMsg)
+		return
+	}
+
+	if updateMsg, errorMsg := client.ReceiveUpdateMessage(conn); errorMsg != nil {
+		log.Println(errorMsg)
+		return
+	} else {
+		log.Println("Received update message from federated tracker with ", binary.BigEndian.Uint16(updateMsg.SrvCount[:]), " servers")
+		for i := 0; i < int(binary.BigEndian.Uint16(updateMsg.SrvCount[:])); i++ {
+			if serverMsg, errorMsg := client.ReceiveServerRegistry(conn); errorMsg != nil {
+				log.Println(errorMsg)
+				return
+			} else {
+
+				serverIp := net.IPv4(serverMsg.IPAddr[0], serverMsg.IPAddr[1], serverMsg.IPAddr[2], serverMsg.IPAddr[3]).String()
+
+				portArray := make([]byte, 2)
+				portArray[0] = serverMsg.Port[0]
+				portArray[1] = serverMsg.Port[1]
+				port := binary.BigEndian.Uint16(portArray)
+
+				userCountArray := make([]byte, 2)
+				userCountArray[0] = serverMsg.NumUsers[0]
+				userCountArray[1] = serverMsg.NumUsers[1]
+				userCount := binary.BigEndian.Uint16(userCountArray)
+
+				if errorMsg := r.registerFederatedServer(serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, trackerAddress); errorMsg != nil {
+					log.Println(errorMsg)
+				}
+			}
+		}
+	}
+
+}
+
 func (r *Registry) Serve() {
 	go r.serveClients()
+	go r.handleFederatedTrackers()
 	r.serveServers()
 }
