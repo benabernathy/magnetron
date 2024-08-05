@@ -10,13 +10,18 @@ import (
 	"magnetron/internal/proto/client"
 	"magnetron/internal/proto/server"
 	"net"
+	"strconv"
 	"time"
 )
 
 type Registry struct {
-	db             *gorm.DB
-	cfg            *config.Config
-	passwordConfig *config.PasswordConfig
+	db                    *gorm.DB
+	cfg                   *config.Config
+	passwordConfig        *config.PasswordConfig
+	federatedTrackerStore *db.FederatedTrackerStore
+	federatedServerStore  *db.FederatedServerStore
+	staticServerStore     *db.StaticServerStore
+	registeredServerStore *db.RegisteredServerStore
 }
 
 var (
@@ -30,19 +35,61 @@ func NewRegistry(cfg *config.Config, passwordConfig *config.PasswordConfig) erro
 	if database, err = db.GetDB(); err != nil {
 		return fmt.Errorf("error while getting internal DB connection: %s", err)
 	}
-	if err = db.InitDB(database); err != nil {
-		return fmt.Errorf("error while initializing internal database: %s", err)
+
+	federatedTrackerStore, err := db.NewFederatedTrackerStore(database)
+
+	if err != nil {
+		return fmt.Errorf("error while initializing federated tracker store: %s", err)
+	}
+
+	federatedServerStore, err := db.NewFederatedServerStore(database)
+
+	if err != nil {
+		return fmt.Errorf("error while initializing federated server store: %s", err)
+	}
+
+	staticServerStore, err := db.NewStaticServerStore(database)
+
+	if err != nil {
+		return fmt.Errorf("error while initializing static server store: %s", err)
+	}
+
+	registeredServerStore, err := db.NewRegisteredServerStore(database)
+
+	if err != nil {
+		return fmt.Errorf("error while initializing registered server store: %s", err)
 	}
 
 	newReg := &Registry{
-		db:             database,
-		cfg:            cfg,
-		passwordConfig: passwordConfig,
+		db:                    database,
+		cfg:                   cfg,
+		passwordConfig:        passwordConfig,
+		federatedTrackerStore: federatedTrackerStore,
+		federatedServerStore:  federatedServerStore,
+		staticServerStore:     staticServerStore,
+		registeredServerStore: registeredServerStore,
 	}
 
-	for _, entry := range cfg.StaticEntries {
+	for idx, entry := range cfg.TrackerFederation.TrackerEntries {
+		trackerHost, err := entry.GetHost()
+		if err != nil {
+			return err
+		}
+
+		trackerPort, err := entry.GetPort()
+		if err != nil {
+			return err
+		}
+
+		if _, err := newReg.federatedTrackerStore.RegisterFederatedTracker(trackerHost, trackerPort, entry.Name, entry.Description, entry.UserCount, uint16(idx)); err != nil {
+			return err
+		}
+	}
+
+	for idx, entry := range cfg.StaticEntries {
 		var host string
 		var port uint16
+		order := uint16(idx)
 
 		if host, err = entry.GetHost(); err != nil {
 			return err
@@ -52,9 +99,10 @@ func NewRegistry(cfg *config.Config, passwordConfig *config.PasswordConfig) erro
 			return err
 		}
 
-		if err := newReg.RegisterNewStaticServer(host, port, entry.Name, entry.Description); err != nil {
+		if _, err := newReg.staticServerStore.RegisterStaticServer(host, port, entry.Name, entry.Description, entry.UserCount, order); err != nil {
 			return err
 		}
+
 	}
 
 	ticker := time.NewTicker(1 * time.Minute)
@@ -62,7 +110,7 @@ func NewRegistry(cfg *config.Config, passwordConfig *config.PasswordConfig) erro
 		for {
 			select {
 			case <-ticker.C:
-				removeExpiredServers(newReg)
+				newReg.registeredServerStore.RemoveExpiredServers(cfg.ServerExpiration)
 			}
 		}
 	}()
@@ -72,73 +120,13 @@ func NewRegistry(cfg *config.Config, passwordConfig *config.PasswordConfig) erro
 
 }
 
-func (r *Registry) RegisterNewServer(passID uint32, host string, port uint16, name string, description string, userCount uint16) error {
-
-	server := db.RegisteredServer{
-		PassID:      passID,
-		Host:        host,
-		Port:        port,
-		Name:        name,
-		Description: description,
-		UserCount:   userCount,
-		LastSeen:    time.Now(),
-		FirstSeen:   time.Now(),
-	}
-
-	var count int64
-	existingServer := &db.RegisteredServer{}
-	r.db.First(&existingServer, passID).Count(&count)
-
-	if createError := r.db.Save(&server).Error; createError != nil {
-		return fmt.Errorf("could not register server because of an internal error: %s", createError)
-	} else if count == 0 {
-		log.Printf("Registered new server: %s (%s:%d)", name, host, port)
-	}
-
-	return nil
-}
-
-func (r *Registry) RegisterNewStaticServer(host string, port uint16, name string, description string) error {
-
-	server := db.StaticServer{
-		Host:        host,
-		Port:        port,
-		Name:        name,
-		Description: description,
-	}
-
-	if createError := r.db.Create(&server).Error; createError != nil {
-		return fmt.Errorf("could not register server because of an internal error: %s", createError)
-	}
-
-	return nil
-
-}
-
-func (r *Registry) getStaticServerByName(name string) (db.StaticServer, error) {
-	var server db.StaticServer
-	if err := r.db.Where("name = ?", name).First(&server).Error; err != nil {
-		return db.StaticServer{}, err
-	}
-
-	return server, nil
-
-}
-
-func (r *Registry) getRegisteredServerByName(name string) (db.RegisteredServer, error) {
-	var server db.RegisteredServer
-
-	if err := r.db.Where("name = ?", name).First(&server).Error; err != nil {
-		return db.RegisteredServer{}, err
-	}
-
-	return server, nil
-
-}
-
 func (r *Registry) getAllStaticServers() ([]client.ServerMessage, error) {
 	var staticServers []db.StaticServer
-	r.db.Find(&staticServers)
+	staticServers, err := r.staticServerStore.GetStaticServers()
+
+	if err != nil {
+		return nil, err
+	}
 
 	serverMessages := make([]client.ServerMessage, 0)
 
@@ -155,7 +143,11 @@ func (r *Registry) getAllStaticServers() ([]client.ServerMessage, error) {
 
 func (r *Registry) getAllRegisteredServers() ([]client.ServerMessage, error) {
 	var registeredServers []db.RegisteredServer
-	r.db.Find(&registeredServers)
+	registeredServers, err := r.registeredServerStore.GetAllRegisteredServers()
+
+	if err != nil {
+		return nil, err
+	}
 
 	serverMessages := make([]client.ServerMessage, 0)
 
@@ -171,56 +163,38 @@ func (r *Registry) getAllRegisteredServers() ([]client.ServerMessage, error) {
 }
 
 func (r *Registry) getAllFederatedServers() ([]client.ServerMessage, error) {
-	var federatedServers []db.FederatedServer
-	r.db.Find(&federatedServers)
 
 	serverMessages := make([]client.ServerMessage, 0)
 
-	for _, server := range federatedServers {
-		if serverMessage, err := client.BuildFederatedServerMessage(server); err != nil {
+	var federatedTrackers []db.FederatedTracker
+	federatedTrackers, err := r.federatedTrackerStore.GetFederatedTrackers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, tracker := range federatedTrackers {
+
+		if serverMessage, err := client.BuildFederatedTrackerMessage(tracker); err != nil {
 			return nil, err
 		} else {
 			serverMessages = append(serverMessages, *serverMessage)
 		}
+
+		federatedServers, err := r.federatedServerStore.GetFederatedServers(tracker.Host, tracker.Port)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, server := range federatedServers {
+			if serverMessage, err := client.BuildFederatedServerMessage(server); err != nil {
+				return nil, err
+			} else {
+				serverMessages = append(serverMessages, *serverMessage)
+			}
+		}
 	}
 
 	return serverMessages, nil
-}
-
-func removeExpiredServers(r *Registry) {
-
-	var registeredServers []db.RegisteredServer
-
-	r.db.Find(&registeredServers)
-	//r.db.Raw("SELECT * FROM registered_servers where ").Scan(&registeredServers)
-
-	for _, server := range registeredServers {
-		if time.Since(server.LastSeen).Minutes() > r.cfg.ServerExpiration.Minutes() {
-			r.db.Delete(&server).Commit()
-			log.Printf("Removed expired server %s", server.Name)
-		}
-	}
-}
-
-func (r *Registry) registerFederatedServer(host string, port uint16, name string, description string, userCount uint16, trackerAddress string) error {
-
-	fedServer := db.FederatedServer{
-		Host:        host,
-		Port:        port,
-		Name:        name,
-		Description: description,
-		UserCount:   userCount,
-		LastSeen:    time.Now(),
-		FirstSeen:   time.Now(),
-	}
-
-	fedServer.ID = fedServer.GenerateId(trackerAddress, host, port)
-
-	if createError := r.db.Save(&fedServer).Error; createError != nil {
-		return fmt.Errorf("could not register federated server because of an internal error: %s", createError)
-	}
-
-	return nil
 }
 
 func (r *Registry) serveClients() {
@@ -367,7 +341,7 @@ func (r *Registry) serveServers() {
 			}
 
 			if validServer {
-				err := r.RegisterNewServer(passID, host, port, serverName, description, userCount)
+				err := r.registeredServerStore.RegisterNewServer(passID, host, port, serverName, description, userCount)
 				if err != nil {
 					log.Println(err)
 				}
@@ -399,13 +373,18 @@ func (r *Registry) handleFederatedTrackers() {
 }
 
 func (r *Registry) pollFederatedTrackers() {
-	for _, tracker := range r.cfg.TrackerFederation.TrackerEntries {
-		go r.pollFederatedTracker(tracker.Address)
+	if trackers, err := r.federatedTrackerStore.GetFederatedTrackers(); err != nil {
+		log.Println(err)
+	} else {
+		for _, tracker := range trackers {
+			go r.pollFederatedTracker(tracker.Host, tracker.Port)
+		}
 	}
+
 }
 
-func (r *Registry) pollFederatedTracker(trackerAddress string) {
-	conn, err := net.Dial("tcp", trackerAddress)
+func (r *Registry) pollFederatedTracker(trackerHost string, trackerPort uint16) {
+	conn, err := net.Dial("tcp", trackerHost+":"+strconv.Itoa(int(trackerPort)))
 
 	defer func(conn net.Conn) {
 		if conn != nil {
@@ -454,13 +433,20 @@ func (r *Registry) pollFederatedTracker(trackerAddress string) {
 				userCountArray[1] = serverMsg.NumUsers[1]
 				userCount := binary.BigEndian.Uint16(userCountArray)
 
-				if errorMsg := r.registerFederatedServer(serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, trackerAddress); errorMsg != nil {
-					log.Println(errorMsg)
+				_, err := r.federatedServerStore.GetFederatedServer(trackerHost, trackerPort, serverIp, port)
+
+				if err == nil {
+					if updateError := r.federatedServerStore.UpdateFederatedServer(trackerHost, trackerPort, serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, uint16(i)); updateError != nil {
+						log.Println(updateError)
+					}
+				} else {
+					if _, errorMsg := r.federatedServerStore.RegisterFederatedServer(trackerHost, trackerPort, serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, uint16(i)); errorMsg != nil {
+						log.Println(errorMsg)
+					}
 				}
 			}
 		}
 	}
-
 }
 
 func (r *Registry) Serve() {
