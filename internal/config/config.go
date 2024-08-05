@@ -30,6 +30,7 @@ type StaticEntry struct {
 	Name        string `yaml:"Name"`        // Name of the server
 	Description string `yaml:"Description"` // Description of the server
 	Address     string `yaml:"Address"`     // Host and port of the server in the form "ip:port"
+	UserCount   uint16 `yaml:"UserCount"`   // Number of users on the server
 }
 
 type TrackerFederationConfig struct {
@@ -40,8 +41,10 @@ type TrackerFederationConfig struct {
 }
 
 type TrackerEntry struct {
-	Address string `yaml:"Address"`
-	Name    string `yaml:"Name"`
+	Address     string `yaml:"Address"`
+	Name        string `yaml:"Name"`
+	Description string `yaml:"Description"`
+	UserCount   uint16 `yaml:"UserCount"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {
@@ -135,6 +138,28 @@ func (e *StaticEntry) GetPort() (uint16, error) {
 }
 
 func (e *StaticEntry) Validate() []error {
+	var errors []error
+
+	if _, err := e.GetHost(); err != nil {
+		errors = append(errors, err)
+	}
+
+	if _, err := e.GetPort(); err != nil {
+		errors = append(errors, err)
+	}
+
+	return errors
+}
+
+func (e *TrackerEntry) GetHost() (string, error) {
+	return getHost(e.Address)
+}
+
+func (e *TrackerEntry) GetPort() (uint16, error) {
+	return getPort(e.Address, 5498)
+}
+
+func (e *TrackerEntry) Validate() []error {
 	var errors []error
 
 	if _, err := e.GetHost(); err != nil {

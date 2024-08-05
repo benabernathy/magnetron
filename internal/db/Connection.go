@@ -13,20 +13,3 @@ func GetDB() (*gorm.DB, error) {
 	})
 	return db, err
 }
-
-func InitDB(db *gorm.DB) error {
-	if err := db.AutoMigrate(&RegisteredServer{}); err != nil {
-		return err
-	}
-
-	if err := db.AutoMigrate(&StaticServer{}); err != nil {
-		return err
-	}
-
-	if err := db.AutoMigrate(&FederatedServer{}); err != nil {
-		return err
-	}
-
-	return nil
-
-}

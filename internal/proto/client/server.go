@@ -319,3 +319,47 @@ func BuildFederatedServerMessage(server db.FederatedServer) (*ServerMessage, err
 
 	return &msg, nil
 }
+
+func BuildFederatedTrackerMessage(tracker db.FederatedTracker) (*ServerMessage, error) {
+
+	ipParts := strings.Split(tracker.Host, ".")
+
+	if len(ipParts) != 4 {
+		return nil, fmt.Errorf("invalid ip address for host - host must be valid ip address: %s", tracker.Host)
+	}
+
+	ipAddr := [4]byte{0x00, 0x00, 0x00, 0x00}
+
+	for index, ipDot := range ipParts {
+		if ipValue, err := strconv.Atoi(ipDot); err != nil {
+			return nil, err
+		} else {
+			ipAddr[index] = byte(ipValue)
+		}
+	}
+
+	port := make([]byte, 2)
+	binary.BigEndian.PutUint16(port, tracker.Port)
+
+	numUsers := make([]byte, 2)
+	binary.BigEndian.PutUint16(numUsers, tracker.UserCount)
+
+	serverName := []byte(tracker.Name)
+	serverNameLen := byte(len(serverName))
+
+	description := []byte(tracker.Description)
+	descriptionLen := byte(len(description))
+
+	msg := ServerMessage{
+		IPAddr:          ipAddr,
+		Port:            [2]byte{port[0], port[1]},
+		NumUsers:        [2]byte{numUsers[0], numUsers[1]},
+		Unused:          [2]byte{0x00, 0x00},
+		NameSize:        serverNameLen,
+		Name:            serverName,
+		DescriptionSize: descriptionLen,
+		Description:     description,
+	}
+
+	return &msg, nil
+}
