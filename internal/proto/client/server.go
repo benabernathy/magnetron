@@ -324,17 +324,16 @@ func BuildFederatedTrackerMessage(tracker db.FederatedTracker) (*ServerMessage, 
 
 	ipParts := strings.Split(tracker.Host, ".")
 
-	if len(ipParts) != 4 {
-		return nil, fmt.Errorf("invalid ip address for host - host must be valid ip address: %s", tracker.Host)
-	}
-
 	ipAddr := [4]byte{0x00, 0x00, 0x00, 0x00}
 
-	for index, ipDot := range ipParts {
-		if ipValue, err := strconv.Atoi(ipDot); err != nil {
-			return nil, err
-		} else {
-			ipAddr[index] = byte(ipValue)
+	if len(ipParts) == 4 {
+
+		for index, ipDot := range ipParts {
+			if ipValue, err := strconv.Atoi(ipDot); err != nil {
+				return nil, err
+			} else {
+				ipAddr[index] = byte(ipValue)
+			}
 		}
 	}
 
