@@ -1,4 +1,4 @@
-FROM golang:1.24.1 AS builder
+FROM golang:1.25.5 AS builder
 
 
 WORKDIR /app
@@ -7,7 +7,7 @@ COPY . .
 RUN cd cmd/magnetron && CGO_ENABLED=1 go build -ldflags="-w -s" -o /app/magnetron . && chmod a+x /app/magnetron
 RUN /app/magnetron c init /app/config.yml
 
-#FROM bitnami/minideb:latest
+
 FROM gcr.io/distroless/base-debian10
 
 COPY --from=builder /app/magnetron /app/magnetron
