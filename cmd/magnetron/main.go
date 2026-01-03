@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gopkg.in/yaml.v3"
 	"log"
+	"magnetron/internal/api"
 	"magnetron/internal/config"
 	"magnetron/internal/registry"
 	"os"
@@ -178,6 +179,13 @@ func serve(cCtx *cli.Context) error {
 	var passwordCfg *config.PasswordConfig
 	if cfg.EnablePasswords {
 		passwordCfg = config.ReadPasswordConfigFile(cfg.PasswordFile)
+	}
+
+	if err := api.NewRestService(&cfg); err != nil {
+		return err
+	} else {
+
+		go func() { api.RestServiceInstance.Serve() }()
 	}
 
 	if err := registry.NewRegistry(&cfg, passwordCfg); err != nil {

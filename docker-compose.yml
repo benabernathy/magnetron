@@ -1,0 +1,9 @@
+services:
+  magnetron:
+    image: benabernathy/magnetron:latest
+    ports:
+      - 5699:5499
+      - 5698:5498
+      - 8080:8080
+    volumes:
+      - "./volume:/usr/local/var/magnetron:rw"
