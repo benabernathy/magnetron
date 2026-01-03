@@ -24,6 +24,7 @@ type Config struct {
 	EnablePasswords   bool                    `yaml:"EnablePasswords"`                      // Enable password authentication
 	PasswordFile      string                  `yaml:"PasswordFile"`                         // Path to the password file
 	TrackerFederation TrackerFederationConfig `yaml:"TrackerFederation"`                    // Tracker federation configuration
+	RestConfig        RestConfig              `yaml:"RestApi"`                              // Rest API configuration
 }
 
 type StaticEntry struct {
@@ -45,6 +46,16 @@ type TrackerEntry struct {
 	Name        string `yaml:"Name"`
 	Description string `yaml:"Description"`
 	UserCount   uint16 `yaml:"UserCount"`
+}
+
+type RestConfig struct {
+	Enabled         bool   `yaml:"Enabled"`
+	Host            string `yaml:"Host"`
+	EnableTls       bool   `yaml:"EnableTls"`
+	KeyFile         string `yaml:"KeyFile"`
+	CertFile        string `yaml:"CertFile"`
+	EnableTokenAuth bool   `yaml:"EnableTokenAuth"`
+	TokenAuthFile   string `yaml:"TokenAuthFile"`
 }
 
 func LoadConfig(configPath string) (*Config, error) {

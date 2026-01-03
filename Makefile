@@ -16,10 +16,10 @@ clean:
 	rm -rf bin
 
 docker-build:
-	docker build -t magnetron:0.2.0 .
+	docker build -t magnetron:0.4.0 .
 
 docker-run: docker-build
-	docker run --rm --name magnetron magnetron:0.2.0
+	docker run --rm --name magnetron magnetron:0.4.0
 
 all: clean release $(PLATFORMS)
 

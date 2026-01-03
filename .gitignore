@@ -1,10 +1,12 @@
 bin
 .idea
 dist
+volume
 
 docs/hotline/~$*.doc
 test-config.yml
 test-passwords.yml
+test-tokens.yml
 .DS_Store
 *.iml
 *.ipr
@@ -12,3 +14,5 @@ test-passwords.yml
 *.bak
 *.swp
 *.swo
+*.pem
+.jetclient

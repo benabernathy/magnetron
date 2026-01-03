@@ -1,0 +1,15 @@
+{
+  "servers": [
+    {
+      "createdAt": "2025-04-15T12:00:00Z",
+      "updatedAt": "2025-04-15T12:00:00Z",
+      "host": "www.notactualhotline.com",
+      "port": 1234,
+      "name": "ASDF123",
+      "description": "Ima Hotline Server!",
+      "userCount": 2,
+      "lastSeen": "2025-04-15T12:00:00Z",
+      "firstSeen": "2025-04-15T12:00:00Z"
+    }
+  ]
+}

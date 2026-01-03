@@ -20,3 +20,12 @@ TrackerFederation:
   Trackers:
     - Address: "localhost:5498"
       Name: "Sample loop back"
+RestApi:
+  Enabled: false
+  Host: "localhost:8080"
+  EnableTls: false
+  CertFile: cert.pem
+  KeyFile: key.pem
+  EnableTokenAuth: false
+  TokenAuthFile: "./tokens.yml"
+  
