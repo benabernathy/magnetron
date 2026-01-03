@@ -3,7 +3,6 @@ package main
 import (
 	_ "embed"
 	"fmt"
-	"gopkg.in/yaml.v3"
 	"log"
 	"magnetron/internal/api"
 	"magnetron/internal/config"
@@ -11,10 +10,12 @@ import (
 	"os"
 	"runtime/debug"
 
+	"gopkg.in/yaml.v3"
+
 	cli "github.com/urfave/cli/v2"
 )
 
-var magnetronVersion = "0.4.0"
+var magnetronVersion = "0.5.0"
 
 var (
 	//go:embed banner.txt
