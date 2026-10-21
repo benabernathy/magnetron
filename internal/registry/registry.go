@@ -255,7 +255,7 @@ func (r *Registry) serveClients() {
 					IPAddr:          [4]byte{0, 0, 0, 0},
 					Port:            [2]byte{0, 0},
 					NumUsers:        [2]byte{0, 0},
-					Unused:          [2]byte{0, 0},
+					Reserved:        [2]byte{0, 0},
 					NameSize:        byte(len(fedServerHeaderName)),
 					Name:            fedServerHeaderName,
 					DescriptionSize: 0,
@@ -299,9 +299,13 @@ func (r *Registry) serveServers() {
 	for true {
 
 		block := make([]byte, 2048)
-		_, addr, _ := conn.ReadFromUDP(block)
+		n, addr, err := conn.ReadFromUDP(block)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
 
-		if serverReg, pError := server.ReadServerRegistration(block); pError != nil {
+		if serverReg, pError := server.ReadServerRegistration(block[:n]); pError != nil {
 			log.Println(pError)
 		} else {
 
@@ -328,6 +332,8 @@ func (r *Registry) serveServers() {
 			userCountArray[1] = serverReg.NumberOfUsers[1]
 			userCount := binary.BigEndian.Uint16(userCountArray)
 
+			reserved := binary.BigEndian.Uint16(serverReg.Reserved[:])
+
 			var validServer = true
 			if r.cfg.EnablePasswords == true {
 
@@ -341,7 +347,7 @@ func (r *Registry) serveServers() {
 			}
 
 			if validServer {
-				err := r.registeredServerStore.RegisterNewServer(passID, host, port, serverName, description, userCount)
+				err := r.registeredServerStore.RegisterNewServer(passID, host, port, serverName, description, userCount, reserved)
 				if err != nil {
 					log.Println(err)
 				}
@@ -433,14 +439,16 @@ func (r *Registry) pollFederatedTracker(trackerHost string, trackerPort uint16) 
 				userCountArray[1] = serverMsg.NumUsers[1]
 				userCount := binary.BigEndian.Uint16(userCountArray)
 
+				reserved := binary.BigEndian.Uint16(serverMsg.Reserved[:])
+
 				_, err := r.federatedServerStore.GetFederatedServer(trackerHost, trackerPort, serverIp, port)
 
 				if err == nil {
-					if updateError := r.federatedServerStore.UpdateFederatedServer(trackerHost, trackerPort, serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, uint16(i)); updateError != nil {
+					if updateError := r.federatedServerStore.UpdateFederatedServer(trackerHost, trackerPort, serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, reserved, uint16(i)); updateError != nil {
 						log.Println(updateError)
 					}
 				} else {
-					if _, errorMsg := r.federatedServerStore.RegisterFederatedServer(trackerHost, trackerPort, serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, uint16(i)); errorMsg != nil {
+					if _, errorMsg := r.federatedServerStore.RegisterFederatedServer(trackerHost, trackerPort, serverIp, port, string(serverMsg.Name), string(serverMsg.Description), userCount, reserved, uint16(i)); errorMsg != nil {
 						log.Println(errorMsg)
 					}
 				}

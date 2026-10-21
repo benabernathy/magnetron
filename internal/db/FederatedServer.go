@@ -18,6 +18,7 @@ type FederatedServer struct {
 	Name              string
 	Description       string
 	UserCount         uint16
+	Reserved          uint16
 	ServerOrder       uint16
 	LastSeen          time.Time
 	FirstSeen         time.Time
@@ -35,7 +36,7 @@ func NewFederatedServerStore(db *gorm.DB) (*FederatedServerStore, error) {
 	return &FederatedServerStore{db}, nil
 }
 
-func (s *FederatedServerStore) RegisterFederatedServer(trackerHost string, trackerPort uint16, host string, port uint16, name string, description string, userCount uint16, order uint16) (FederatedServer, error) {
+func (s *FederatedServerStore) RegisterFederatedServer(trackerHost string, trackerPort uint16, host string, port uint16, name string, description string, userCount uint16, reserved uint16, order uint16) (FederatedServer, error) {
 	server := FederatedServer{
 		FederatedServerId: FederatedServerId{
 			TrackerHost: trackerHost,
@@ -46,6 +47,7 @@ func (s *FederatedServerStore) RegisterFederatedServer(trackerHost string, track
 		Name:        name,
 		Description: description,
 		UserCount:   userCount,
+		Reserved:    reserved,
 		ServerOrder: order,
 		FirstSeen:   time.Now(),
 		LastSeen:    time.Now(),
@@ -54,15 +56,17 @@ func (s *FederatedServerStore) RegisterFederatedServer(trackerHost string, track
 	return server, s.db.Save(&server).Error
 }
 
-func (s *FederatedServerStore) UpdateFederatedServer(trackerHost string, trackerPort uint16, host string, port uint16, name string, description string, userCount uint16, order uint16) error {
+func (s *FederatedServerStore) UpdateFederatedServer(trackerHost string, trackerPort uint16, host string, port uint16, name string, description string, userCount uint16, reserved uint16, order uint16) error {
 	updatedServer := FederatedServer{
 		Name:        name,
 		Description: description,
 		UserCount:   userCount,
+		Reserved:    reserved,
 		ServerOrder: order,
 		LastSeen:    time.Now(),
 	}
-	return s.db.Model(&FederatedServer{}).Where("tracker_host = ? AND tracker_port = ? AND host = ? AND port = ?", trackerHost, trackerPort, host, port).Updates(updatedServer).Error
+	// Select the columns explicitly so zero values (e.g. a user count of 0) are written too
+	return s.db.Model(&FederatedServer{}).Select("Name", "Description", "UserCount", "Reserved", "ServerOrder", "LastSeen").Where("tracker_host = ? AND tracker_port = ? AND host = ? AND port = ?", trackerHost, trackerPort, host, port).Updates(updatedServer).Error
 }
 
 func (s *FederatedServerStore) GetFederatedServer(trackerHost string, trackerPort uint16, host string, port uint16) (FederatedServer, error) {

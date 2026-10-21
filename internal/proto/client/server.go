@@ -14,16 +14,16 @@ type ServerMessage struct {
 	IPAddr          [4]byte
 	Port            [2]byte
 	NumUsers        [2]byte // Number of users connected to this particular server
-	Unused          [2]byte
-	NameSize        byte   // Length of name string
-	Name            []byte // Server name
+	Reserved        [2]byte // Undocumented field, relayed from the registering server
+	NameSize        byte    // Length of name string
+	Name            []byte  // Server name
 	DescriptionSize byte
 	Description     []byte
 }
 
 func (msg *ServerMessage) GetSizeInBytes() int {
 
-	var msgSize = 12 // 4 bytes for IP, 2 bytes for port, 2 bytes for num users, 2 bytes for unused,
+	var msgSize = 12 // 4 bytes for IP, 2 bytes for port, 2 bytes for num users, 2 bytes for reserved,
 	// 1 byte for name size, 1 byte for description size
 
 	msgSize = msgSize + len(msg.Description)
@@ -48,7 +48,7 @@ func (msg *ServerMessage) GetMessageInBytes() []byte {
 		msgBytes = append(msgBytes, b)
 	}
 
-	for _, b := range msg.Unused {
+	for _, b := range msg.Reserved {
 		msgBytes = append(msgBytes, b)
 	}
 
@@ -118,13 +118,13 @@ func ReceiveServerRegistry(conn net.Conn) (*ServerMessage, *proto.ProtoError) {
 		return nil, &result
 	}
 
-	unused := make([]byte, 2)
+	reserved := make([]byte, 2)
 
-	if err := binary.Read(conn, binary.BigEndian, unused); err != nil {
+	if err := binary.Read(conn, binary.BigEndian, reserved); err != nil {
 		result := proto.ProtoError{
 			Error:        err,
-			ErrorMessage: "Error while attempting to receive server message / unused from client)",
-			Expected:     unused,
+			ErrorMessage: "Error while attempting to receive server message / reserved from client)",
+			Expected:     reserved,
 		}
 		return nil, &result
 	}
@@ -181,7 +181,7 @@ func ReceiveServerRegistry(conn net.Conn) (*ServerMessage, *proto.ProtoError) {
 		IPAddr:          [4]byte{ipAddr[0], ipAddr[1], ipAddr[2], ipAddr[3]},
 		Port:            [2]byte{port[0], port[1]},
 		NumUsers:        [2]byte{numUsers[0], numUsers[1]},
-		Unused:          [2]byte{unused[0], unused[1]},
+		Reserved:        [2]byte{reserved[0], reserved[1]},
 		NameSize:        nameSize[0],
 		Name:            name,
 		DescriptionSize: descriptionSize[0],
@@ -224,7 +224,7 @@ func BuildStaticServerMessage(server db.StaticServer) (*ServerMessage, error) {
 		IPAddr:          ipAddr,
 		Port:            [2]byte{port[0], port[1]},
 		NumUsers:        [2]byte{numUsers[0], numUsers[1]},
-		Unused:          [2]byte{0x00, 0x00},
+		Reserved:        [2]byte{0x00, 0x00},
 		NameSize:        serverNameLen,
 		Name:            serverName,
 		DescriptionSize: descriptionLen,
@@ -257,6 +257,9 @@ func BuildRegisteredServerMessage(server db.RegisteredServer) (*ServerMessage, e
 	numUsers := make([]byte, 2)
 	binary.BigEndian.PutUint16(numUsers, server.UserCount)
 
+	reserved := make([]byte, 2)
+	binary.BigEndian.PutUint16(reserved, server.Reserved)
+
 	serverName := []byte(server.Name)
 	serverNameLen := byte(len(serverName))
 
@@ -267,7 +270,7 @@ func BuildRegisteredServerMessage(server db.RegisteredServer) (*ServerMessage, e
 		IPAddr:          ipAddr,
 		Port:            [2]byte{port[0], port[1]},
 		NumUsers:        [2]byte{numUsers[0], numUsers[1]},
-		Unused:          [2]byte{0x00, 0x00},
+		Reserved:        [2]byte{reserved[0], reserved[1]},
 		NameSize:        serverNameLen,
 		Name:            serverName,
 		DescriptionSize: descriptionLen,
@@ -300,6 +303,9 @@ func BuildFederatedServerMessage(server db.FederatedServer) (*ServerMessage, err
 	numUsers := make([]byte, 2)
 	binary.BigEndian.PutUint16(numUsers, server.UserCount)
 
+	reserved := make([]byte, 2)
+	binary.BigEndian.PutUint16(reserved, server.Reserved)
+
 	serverName := []byte(server.Name)
 	serverNameLen := byte(len(serverName))
 
@@ -310,7 +316,7 @@ func BuildFederatedServerMessage(server db.FederatedServer) (*ServerMessage, err
 		IPAddr:          ipAddr,
 		Port:            [2]byte{port[0], port[1]},
 		NumUsers:        [2]byte{numUsers[0], numUsers[1]},
-		Unused:          [2]byte{0x00, 0x00},
+		Reserved:        [2]byte{reserved[0], reserved[1]},
 		NameSize:        serverNameLen,
 		Name:            serverName,
 		DescriptionSize: descriptionLen,
@@ -353,7 +359,7 @@ func BuildFederatedTrackerMessage(tracker db.FederatedTracker) (*ServerMessage, 
 		IPAddr:          ipAddr,
 		Port:            [2]byte{port[0], port[1]},
 		NumUsers:        [2]byte{numUsers[0], numUsers[1]},
-		Unused:          [2]byte{0x00, 0x00},
+		Reserved:        [2]byte{0x00, 0x00},
 		NameSize:        serverNameLen,
 		Name:            serverName,
 		DescriptionSize: descriptionLen,

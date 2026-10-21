@@ -45,6 +45,7 @@ type RegisteredServerDocument struct {
 	Port        uint16    `json:"port"`
 	Description string    `json:"description"`
 	UserCount   uint16    `json:"userCount"`
+	Reserved    uint16    `json:"reserved"`
 	FirstSeen   time.Time `json:"firstSeen"`
 	LastSeen    time.Time `json:"lastSeen"`
 }
@@ -59,6 +60,7 @@ type FederatedServerDocument struct {
 	Port        uint16    `json:"port"`
 	Description string    `json:"description"`
 	UserCount   uint16    `json:"userCount"`
+	Reserved    uint16    `json:"reserved"`
 	TrackerHost string    `json:"trackerHost"`
 	TrackerPort uint16    `json:"trackerPort"`
 	FirstSeen   time.Time `json:"firstSeen"`
@@ -270,6 +272,7 @@ func (r *RestService) getRegisteredServers(w http.ResponseWriter, request *http.
 			Port:        server.Port,
 			Description: server.Description,
 			UserCount:   server.UserCount,
+			Reserved:    server.Reserved,
 			FirstSeen:   server.FirstSeen,
 			LastSeen:    server.LastSeen,
 		}
@@ -314,6 +317,7 @@ func (r *RestService) getFederatedServers(w http.ResponseWriter, request *http.R
 					TrackerPort: tracker.Port,
 					Description: server.Description,
 					UserCount:   server.UserCount,
+					Reserved:    server.Reserved,
 					FirstSeen:   server.FirstSeen,
 					LastSeen:    server.LastSeen,
 				}

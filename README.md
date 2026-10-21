@@ -178,3 +178,13 @@ docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:l
 
 Note: The path to the passwords.yml file specified in the field `PasswordFile` in this case would be: `/usr/local/var/magnetron/passwords.yml`
 
+# Stuff for Nerds
+
+## Reserved Registration Bytes
+
+The server registration message contains two undocumented bytes (offset 6-7, directly after
+the user count). Like the official Hotline tracker, Magnetron stores these bytes and relays them
+unmodified to tracker clients and federated trackers. Magnetron does not interpret them; by
+convention, servers that support TLS may use them to advertise their TLS port. The value is
+also exposed as `reserved` in the REST API server documents.
+
