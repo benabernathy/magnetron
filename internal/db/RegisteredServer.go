@@ -17,6 +17,7 @@ type RegisteredServer struct {
 	Name        string
 	Description string
 	UserCount   uint16
+	Reserved    uint16
 	LastSeen    time.Time
 	FirstSeen   time.Time
 }
@@ -33,7 +34,7 @@ func NewRegisteredServerStore(db *gorm.DB) (*RegisteredServerStore, error) {
 	return &RegisteredServerStore{db}, nil
 }
 
-func (r *RegisteredServerStore) RegisterNewServer(passID uint32, host string, port uint16, name string, description string, userCount uint16) error {
+func (r *RegisteredServerStore) RegisterNewServer(passID uint32, host string, port uint16, name string, description string, userCount uint16, reserved uint16) error {
 
 	server := RegisteredServer{
 		PassID:      passID,
@@ -42,6 +43,7 @@ func (r *RegisteredServerStore) RegisterNewServer(passID uint32, host string, po
 		Name:        name,
 		Description: description,
 		UserCount:   userCount,
+		Reserved:    reserved,
 		LastSeen:    time.Now(),
 		FirstSeen:   time.Now(),
 	}

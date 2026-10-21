@@ -9,7 +9,7 @@ type ServerRegistration struct {
 	magic           [2]byte // Magic number
 	Port            [2]byte // Port number
 	NumberOfUsers   [2]byte // Number of users connected to this particular server
-	magic2          [2]byte // Magic number part deux
+	Reserved        [2]byte // Undocumented field, relayed to clients as-is
 	PassId          [4]byte // Pass ID
 	NameSize        byte    // Length of name string
 	Name            []byte  // Server name
@@ -23,13 +23,8 @@ func ReadServerRegistration(input []byte) (*ServerRegistration, *proto.ProtoErro
 
 	var msg ServerRegistration
 
-	if len(input) < 17 {
-		result := proto.ProtoError{
-			Error:        errors.New("message too short"),
-			ErrorMessage: "Invalid server registration message",
-			Expected:     msg,
-		}
-		return nil, &result
+	if len(input) < 14 {
+		return nil, truncatedError(msg)
 	}
 
 	msg.magic[0] = input[0]
@@ -41,26 +36,58 @@ func ReadServerRegistration(input []byte) (*ServerRegistration, *proto.ProtoErro
 	msg.NumberOfUsers[0] = input[4]
 	msg.NumberOfUsers[1] = input[5]
 
-	msg.magic2[0] = input[6]
-	msg.magic2[1] = input[7]
+	msg.Reserved[0] = input[6]
+	msg.Reserved[1] = input[7]
 
 	msg.PassId[0] = input[8]
 	msg.PassId[1] = input[9]
 	msg.PassId[2] = input[10]
 	msg.PassId[3] = input[11]
 
-	msg.NameSize = input[12]
+	offset := 12
 
-	msg.Name = input[13 : 13+msg.NameSize]
+	msg.NameSize = input[offset]
+	offset++
 
-	msg.DescriptionSize = input[13+msg.NameSize]
+	if offset+int(msg.NameSize)+1 > len(input) {
+		return nil, truncatedError(msg)
+	}
 
-	msg.Description = input[14+msg.NameSize : 14+msg.NameSize+msg.DescriptionSize]
+	msg.Name = input[offset : offset+int(msg.NameSize)]
+	offset += int(msg.NameSize)
 
-	msg.PasswordSize = input[14+msg.NameSize+msg.DescriptionSize]
+	msg.DescriptionSize = input[offset]
+	offset++
 
-	msg.Password = input[15+msg.NameSize+msg.DescriptionSize : 15+msg.NameSize+msg.DescriptionSize+msg.PasswordSize]
+	if offset+int(msg.DescriptionSize) > len(input) {
+		return nil, truncatedError(msg)
+	}
+
+	msg.Description = input[offset : offset+int(msg.DescriptionSize)]
+	offset += int(msg.DescriptionSize)
+
+	// The password block is optional; servers without one may end the message here.
+	if offset >= len(input) {
+		return &msg, nil
+	}
+
+	msg.PasswordSize = input[offset]
+	offset++
+
+	if offset+int(msg.PasswordSize) > len(input) {
+		return nil, truncatedError(msg)
+	}
+
+	msg.Password = input[offset : offset+int(msg.PasswordSize)]
 
 	return &msg, nil
 
+}
+
+func truncatedError(msg ServerRegistration) *proto.ProtoError {
+	return &proto.ProtoError{
+		Error:        errors.New("message too short"),
+		ErrorMessage: "Invalid server registration message",
+		Expected:     msg,
+	}
 }
