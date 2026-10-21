@@ -178,7 +178,7 @@ docker run --rm -v $(PWD)/conf:/usr/local/var/magnetron benabernathy/magnetron:l
 
 Note: The path to the passwords.yml file specified in the field `PasswordFile` in this case would be: `/usr/local/var/magnetron/passwords.yml`
 
-# Nitty Gritty Details for Nerds
+# Stuff for Nerds
 
 ## Reserved Registration Bytes
 
